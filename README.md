@@ -5,7 +5,7 @@
 ## 1. Información General
 
 **Módulo:** Módulo 4 - Desarrollo de Aplicaciones con IA  
-**Semana:** Semana 1 - Diagnóstico y arquitectura inicial  
+**Semana:** Semana 2 - API inteligente y contratos de integración 
 **Nombre del equipo:**  
 **Integrantes:**  
 
@@ -97,34 +97,9 @@ Indiquen claramente dónde está la IA dentro del proyecto.
 
 ## 6. Estado Actual del Proyecto
 
-Describan qué funciona actualmente y qué falta completar.
-
-### Funcionalidades que ya funcionan
-
-- Inicio de sesión y control de acceso por rol con Supabase Auth.
-
-- Chat para estudiantes con sesiones, historial de mensajes y actualización en tiempo real.
-
-- Endpoint /api/chat con validación de entrada, detección básica de crisis, filtrado de temas fuera de alcance y llamada al modelo generativo. 
-
-### Funcionalidades incompletas o pendientes 
-
-- Completar robustez del flujo cuando el proveedor de IA devuelve errores internos.
-
-- Implementar evidencia formal de pruebas, métricas y observabilidad.
-
-- Definir el mecanismo final de escalamiento o supervisión clínica para casos de crisis.
+Ver diagnóstico técnico completo en [`docs/diagnostico-semana-1.md`](./docs/diagnostico-semana-1.md), incluyendo funcionalidades activas, partes incompletas, dependencias y evidencia de que el prototipo funciona. 
 
 
-### Evidencias actuales
-
-- Ruta de chat en app/chat/page.tsx con manejo de sesiones, mensajes y renderizado de conversación.
-
-- Endpoint app/api/chat/route.ts con lógica de validación, análisis emocional y generación de respuesta.
-
-- Integración con Supabase Realtime para escuchar inserciones de mensajes por sesión. 
-
----
 
 ## 7. Arquitectura Actual
 
@@ -132,17 +107,8 @@ Incluyan o enlacen el diagrama de la arquitectura actual.
 
 **Archivo sugerido:** `docs/arquitectura-actual.md` o `docs/arquitectura-actual.png`
 
-**Componentes actuales:**
-|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Componente                 | Descripción                                                               | Estado actual                                  |
-| -------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- |
-| Interfaz                   | Aplicación web en Next.js App Router con pantalla de chat y autenticación | Funcional                                      |
-| Backend / lógica principal | Route Handler /api/chat y funciones auxiliares para sesiones y mensajes   | Funcional con mejoras pendientes               |
-| Componente IA              | Servicio de análisis emocional y modelo generativo Gemini/Gemma           | Parcialmente funcional                         |
-| Datos                      | Supabase PostgreSQL con tablas de usuarios, sesiones y mensajes           | Funcional                                      |
-| Servicios externos         | Supabase Auth, Supabase Realtime y Google AI API                          | Funcional con incidencias puntuales del modelo |
-| Configuración              | Variables de entorno para Supabase, análisis emocional y proveedor de IA  | Parcial                                        |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+Ver detalle completo en [`docs/arquitectura-actual.md`](./docs/arquitectura-actual.md), incluyendo actor principal, interfaz, backend, componente de IA, datos, servicios externos y puntos frágiles.
+
 **Diagrama:**
 
 > !![diagrama](image-1.png)
@@ -155,19 +121,7 @@ Describan cómo debería quedar el proyecto al finalizar el módulo.
 
 **Archivo sugerido:** `docs/arquitectura-objetivo.md` o `docs/arquitectura-objetivo.png`
 
-**Elementos esperados:**
-
-- interfaz web para estudiante y psicólogo
-
-- API interna en Next.js con endpoints claros
-
-- módulo IA desacoplado dentro del backend
-
-- Supabase como auth, base de datos y realtime
-
-- configuración por .env
-
-- pruebas mínimas y despliegue con Docker
+Ver detalle completo en [`docs/arquitectura-objetivo.md`](./docs/arquitectura-objetivo.md), incluyendo la separación entre interfaz, backend, IA, datos y configuración, y el plan por semana hasta el despliegue final.
 
 **Diagrama:**
 
@@ -184,6 +138,10 @@ app/
   api/
     chat/
       route.ts
+    health/
+      route.ts
+    metadata/
+      route.ts
   auth/login
    page.tsx
   signup
@@ -191,20 +149,28 @@ app/
   chat/
     page.tsx
   dashboard/
-   page.tsx  
+   page.tsx
 lib/
   supabase.ts
   chatSession.ts
   sendStudentMessage.ts
   saveBotMessage.ts
+  validation/
+    chatSchema.ts
+  ai/
+    chatService.ts
+docs/
+  api.md
+  evidencia-pruebas.pdf
 
 README.md
+.env.example
 .env.local
 package.json
 
 **Notas sobre la estructura:**
 
-> La carpeta app/ contiene la interfaz y las rutas del App Router. La carpeta lib/ agrupa lógica reutilizable para Supabase, sesiones y persistencia de mensajes. Los archivos de configuración y variables de entorno viven en la raíz del proyecto.
+> La carpeta app/api/ expone tres endpoints: /chat (capacidad inteligente principal), /health (estado del servicio) y /metadata (información de versión y tecnología). La carpeta lib/validation/ contiene la validación del contrato de entrada, y lib/ai/ concentra la lógica de negocio (prompt, llamada a Gemini, análisis emocional y detección de crisis), separada del route handler. La documentación completa del contrato de la API está en docs/api.md.
 
 ---
 
@@ -252,7 +218,19 @@ npm install
 | GOOGLE_AI_MODEL                      | Modelo generativo a usar                        | No          |
 |------------------------------------------------------------------------------------------------------|
 ---
+### Probar los endpoints
 
+Con el servidor corriendo (`npm run dev`) y el servicio de pysentimiento activo en el puerto 8000, prueba los endpoints con curl, Thunder Client o Postman:
+
+```bash
+curl http://localhost:3000/api/health
+curl http://localhost:3000/api/metadata
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d "{\"message\":\"me siento agotado con los estudios\"}"
+```
+
+La documentación completa del contrato de entrada/salida de cada endpoint está en [`docs/api.md`](./docs/api.md).
 ## 11. Datos Utilizados
 
 Describan los datos que usa la aplicación.
@@ -284,21 +262,9 @@ La calidad del texto puede variar y afectar tanto la detección emocional como l
 
 ## 12. Riesgos Técnicos y Deuda Técnica
 
-Identifiquen riesgos reales del proyecto.
-|----------------------------------------------------------------------------------------------------------------------------------------------------|1
-| Riesgo                                                 | Categoría                 | Probabilidad  | Impacto | Mitigación propuesta                |
-|                                                        |                           |               |                                               |                                                                            |                           |               |
-| ------------------------------------------------------ | ------------------------- | ------------  | ----------------------------------------------|
-| Fallos del proveedor generativo o respuestas 500       | Modelo / Servicio externo | Alta  | Alto  | Implementar fallback seguro, reintentos       | 
-|                                                                                                    | controlados y cambio de modelo                |
-| Detección de crisis incompleta por reglas simples      | Modelo / Seguridad        | Media | Alto  | Ampliar reglas, validar con expertos y definir|   
-|                                                                                                    | protocolo humano                              |
-| Exposición de datos sensibles en logs o respuestas     | Seguridad                 | Media | Alto  | Sanitizar logs, aplicar RLS y revisar 
-|                                                                                                    | almacenamiento                                |
-| Acoplamiento fuerte entre frontend y lógica de negocio | Código / Arquitectura     | Media | Medio | Separar servicios y contratos de entrada/ 
-|                                                                                                    | salida                                        |
-| Ausencia de pruebas automatizadas                      | Código / Calidad          | Alta  | Medio | Incorporar pruebas unitarias y de integracion |
-|----------------------------------------------------------------------------------------------------------------------------------------------------|
+## 12. Riesgos Técnicos y Deuda Técnica
+
+Ver tabla completa de riesgos, categorías, probabilidad, impacto y mitigación en [`docs/riesgos-tecnicos.md`](./docs/riesgos-tecnicos.md).
 
 ---
 
@@ -308,25 +274,9 @@ Indiquen cómo evolucionará el proyecto durante el módulo.
 
 ## 13. Plan de Mejora por Semana
 
-El plan de mejora por semana se definió con base en el estado actual del proyecto, priorizando primero que el flujo principal del sistema funcione correctamente y después reforzando calidad, despliegue, seguridad y documentación.
+## 13. Plan de Mejora por Semana
 
-| Semana | Mejora esperada | Evidencia esperada |
-|----------|-----------------------------------------------------------|----------------------------------------------------------------------------------|
-| Semana 1 | Diagnóstico, revisión del estado actual y definición      | Documento inicial del proyecto, problema definido, arquitectura actual,          |
-|          |  de arquitectura                                          |  y objetivos backlog de tareas priorizado                                        |
-| Semana 2 | Estabilizar el flujo principal del chat y                 | Chat funcional de extremo a extremo, mensajes guardados en base de datos,        |
-|          |  la integracion con IA                                    |  prueba manual del endpoint `/api/chat`                                          |
-| Semana 3 | Completar el módulo del psicólogo y la gestión de alertas | Dashboard básico funcional, evidencia de lectura de alertas,                     | 
-|          |                                                           |  validacion de acceso por roles                                                  |
-| Semana 4 | Incorporar pruebas mínimas y mejorar manejo de errores    | Pruebas básicas de utilidades o endpoints, manejo de respuestas vacías,          |
-|          |                                                           |  validacion de errores y  estados de carga                                       |
-| Semana 5 | Mejorar documentación, variables de entorno y             | README actualizado, archivo `.env.example`, diagramas en `docs/`, estructura     |
-|          |  organizacion del repositorio                             |  del proyecto ordenada                                                           |
-| Semana 6 | Preparar despliegue, revisión final y                     | Dockerfile o despliegue funcional, validación final del sistema, demo,           |
-|          | defensa del proyecto                                      |  presentaciony evidencias                                                        |
-|          | completas                                                 |                                                                                  |
-|----------|-----------------------------------------------------------|----------------------------------------------------------------------------------|
----
+Ver plan completo semana por semana en [`docs/plan-mejora.md`](./docs/plan-mejora.md).
 
 ## 14. Limitaciones Actuales
 
@@ -351,7 +301,11 @@ Describan con honestidad las limitaciones del prototipo.
 
 Agreguen enlaces o referencias a evidencias del proyecto.
 
-se adjuntara un pdf con capturas
+Ver [`docs/api.md`](./docs/api.md) para el contrato completo de cada endpoint, y [`docs/evidencia-pruebas.pdf`](./docs/evidencia-pruebas.pdf) para capturas de:
+- GET /api/health → respuesta 200 OK
+- GET /api/metadata → respuesta 200 OK
+- POST /api/chat con mensaje válido → respuesta 200 OK
+- POST /api/chat con body vacío → error controlado 400
 
 ---
 
