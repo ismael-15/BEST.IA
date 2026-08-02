@@ -231,7 +231,7 @@ export default function ChatPage() {
     initChat();
 
     const { data: { subscription } = {} } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         if (!session?.user) {
           hardRedirect('/auth/login');
           return;
