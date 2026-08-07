@@ -133,40 +133,38 @@ Ver detalle completo en [`docs/arquitectura-objetivo.md`](./docs/arquitectura-ob
 
 Describan la organización del proyecto.
 
-bestia/
-app/
-  api/
-    chat/
-      route.ts
-    health/
-      route.ts
-    metadata/
-      route.ts
-  auth/login
-   page.tsx
-  signup
-   page.tsx
-  chat/
-    page.tsx
-  dashboard/
-   page.tsx
-lib/
-  supabase.ts
-  chatSession.ts
-  sendStudentMessage.ts
-  saveBotMessage.ts
-  validation/
-    chatSchema.ts
-  ai/
-    chatService.ts
-docs/
-  api.md
-  evidencia-pruebas.pdf
-
-README.md
-.env.example
-.env.local
-package.json
+.
+├── app/
+│   ├── api/
+│   │   ├── chat/
+│   │   │   └── route.ts
+│   │   ├── health/
+│   │   │   └── route.ts
+│   │   └── metadata/
+│   │       └── route.ts
+│   ├── auth/
+│   ├── chat/
+│   └── dashboard/
+├── lib/
+│   ├── ai/
+│   │   └── chatService.ts
+│   ├── chatSession.ts
+│   ├── sendStudentMessage.ts
+│   ├── saveBotMessage.ts
+│   └── supabase.ts
+├── docs/
+│   ├── api.md
+│   ├── evidencias_despliegue.pdf
+│   └── [otros documentos y evidencias]
+├── emotion_service.py
+├── Dockerfile
+├── Dockerfile.emotion
+├── docker-compose.yml
+├── .dockerignore
+├── .env.example
+├── requirements.txt
+├── package.json
+└── README.md
 
 **Notas sobre la estructura:**
 
@@ -194,16 +192,77 @@ correr el servicio uvicorn emotion_service:app --host 0.0.0.0 --port 8000 --relo
 
 ### Instalación
 
+### Ejecución local de la aplicación web
+
 ```bash
-
 npm install
-
+npm run dev
 ```
 
-### Ejecución
+La aplicación estará disponible en:
+
+```text
+http://localhost:3000
+```
+### Ejecución con Docker
+
+Configura el archivo `.env.local` y ejecuta:
 
 ```bash
-npm install
+docker compose up --build
+```
+
+La aplicación web estará disponible en:
+
+```text
+http://localhost:3000
+```
+
+Para detener los contenedores:
+
+```bash
+docker compose down
+```
+
+Para ver los logs:
+
+```bash
+docker compose logs -f
+```
+### Ejecución local del servicio emocional
+
+```bash
+python -m venv venv
+```
+
+En Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Instala las dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+Inicia el servicio:
+
+```bash
+uvicorn emotion_service:app --host 0.0.0.0 --port 8000 --reload
+```
+
+En ejecución local, utiliza:
+
+```env
+PYSENTIMIENTO_API_URL=http://localhost:8000
+```
+
+En Docker, utiliza:
+
+```env
+PYSENTIMIENTO_API_URL=http://emotion-service:8000
 ```
 
 ### Variables de entorno
@@ -213,7 +272,7 @@ npm install
 | ------------------------------------ | ----------------------------------------------- | ----------- |
 | NEXT_PUBLIC_SUPABASE_URL             | URL del proyecto Supabase                       | Sí          |
 | NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Clave pública o anon/publicable key de Supabase | Sí          |
-| NEXT_PUBLIC_PYSENTIMIENTO_API_URL    | URL del servicio de análisis emocional          | Sí          |
+| PYSENTIMIENTO_API_URL                | URL del servicio de análisis emocional          | Sí          |
 | GOOGLE_AI_API_KEY                    | Clave del proveedor de IA                       | Sí          |
 | GOOGLE_AI_MODEL                      | Modelo generativo a usar                        | No          |
 |------------------------------------------------------------------------------------------------------|
@@ -225,9 +284,7 @@ Con el servidor corriendo (`npm run dev`) y el servicio de pysentimiento activo 
 ```bash
 curl http://localhost:3000/api/health
 curl http://localhost:3000/api/metadata
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d "{\"message\":\"me siento agotado con los estudios\"}"
+curl -X POST http://localhost:3000/api/chat
 ```
 
 La documentación completa del contrato de entrada/salida de cada endpoint está en [`docs/api.md`](./docs/api.md).
@@ -236,7 +293,7 @@ La documentación completa del contrato de entrada/salida de cada endpoint está
 Describan los datos que usa la aplicación.
 
 |------------------------------------------------------------------------------------------------------------------------------|
-| Fuente de Datos       | Tipo de Datos             | Uso dentro del Proyecto            | Observaciones                       |                                  
+| Fuente de Datos       | Tipo de Datos             | Uso dentro del Proyecto            |        Observaciones           |                                  
 |-----------------------|---------------------------|------------------------------------|-------------------------------------|
 | Mensajes del chat     | Texto libre               | Entrada para análisis emocional    | Puede contener información sensible |
 |                       |                           | y generacion de respuestas.        |                                     |
@@ -260,7 +317,6 @@ La calidad del texto puede variar y afectar tanto la detección emocional como l
 
 ---
 
-## 12. Riesgos Técnicos y Deuda Técnica
 
 ## 12. Riesgos Técnicos y Deuda Técnica
 
@@ -272,9 +328,6 @@ Ver tabla completa de riesgos, categorías, probabilidad, impacto y mitigación 
 
 Indiquen cómo evolucionará el proyecto durante el módulo.
 
-## 13. Plan de Mejora por Semana
-
-## 13. Plan de Mejora por Semana
 
 Ver plan completo semana por semana en [`docs/plan-mejora.md`](./docs/plan-mejora.md).
 
