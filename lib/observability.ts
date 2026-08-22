@@ -2,16 +2,16 @@ import { randomUUID } from 'crypto';
 
 export type LogStatus = 'success' | 'error';
 
-
 interface RequestLogInput {
   requestId: string;
   route: string;
   status: LogStatus;
   durationMs: number;
-  model?: string;
-  emotion?: string;
+  model?: string | null;
+  emotion?: string | null;
+  emotionScore?: number | null;
   crisisDetected?: boolean;
-  errorType?: string;
+  errorType?: string | null;
 }
 
 export function createRequestId() {
@@ -26,10 +26,11 @@ export function logRequestEvent(input: RequestLogInput) {
       route: input.route,
       status: input.status,
       duration_ms: Math.round(input.durationMs),
-      model: input.model || null,
-      emotion: input.emotion || null,
+      model: input.model ?? null,
+      emotion: input.emotion ?? null,
+      emotion_score: input.emotionScore ?? null,
       crisis_detected: input.crisisDetected ?? false,
-      error_type: input.errorType || null,
+      error_type: input.errorType ?? null,
       timestamp: new Date().toISOString(),
     })
   );

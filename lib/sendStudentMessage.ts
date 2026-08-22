@@ -1,16 +1,25 @@
 import { supabase } from '@/lib/supabase';
 import { getOrCreateActiveSession } from '@/lib/chatSession';
+//import { analyzeEmotion, detectCrisis } from '@/lib/emotion';
 
-export async function sendStudentMessage(content: string, studentId: string) {
-  const session = await getOrCreateActiveSession(studentId);
+export async function sendStudentMessage(content: string, studentId: string) {  const session = await getOrCreateActiveSession(studentId);
 
+  /*Analizamos el mensaje antes de guardarlo para evitar que quede como "pending".
+  const emotionResult = await analyzeEmotion(content);
+
+  const crisisDetected = detectCrisis(
+    content,
+    emotionResult.emotion,
+    emotionResult.emotionScore
+  );
+*/
   const payload = {
     session_id: session.id,
     user_id: studentId,
     content,
     role: 'user',
-    emotion: 'pending',
-    emotion_score: null,
+    emotion: 'neutral',
+    emotion_score: 0,
     crisis_detected: false,
     created_at: new Date().toISOString(),
   };
@@ -65,20 +74,56 @@ export async function updateMessageAnalysis(
   emotionScore: number,
   crisisDetected: boolean
 ) {
-  const { error: updateError } = await supabase
-    .from('messages')
-    .update({
-      emotion,
-      emotion_score: emotionScore,
-      crisis_detected: crisisDetected,
-    })
-    .eq('id', messageId);
+  console.log('Payload enviado a Supabase para actualizar usuario:', {
+  messageId,
+  studentId,
+  emotion,
+  emotionScore,
+  crisisDetected,
+});
 
-  if (updateError) {
-    console.error('Error actualizando análisis del mensaje:', updateError);
-  }
+const { data: updatedMessage, error: updateError } = await supabase
+  .from('messages')
+  .update({
+    emotion,
+    emotion_score: emotionScore,
+    crisis_detected: crisisDetected,
+  })
+  .eq('id', messageId)
+  .select('id, role, emotion, emotion_score, crisis_detected')
+  .maybeSingle();
+
+if (updateError) {
+  console.error('Error actualizando análisis del mensaje:', updateError);
+  return;
+}
+
+if (!updatedMessage) {
+  console.error('No se actualizo ningun mensaje', {
+    messageId,
+    studentId,
+  });
+  return;
+}
+
+console.log('Mensaje de usuario actualizado correctamente:', updatedMessage);
 
   if (!crisisDetected) return;
+
+  const { data: existingAlert, error: existingAlertError } = await supabase
+    .from('alerts')
+    .select('id')
+    .eq('message_id', messageId)
+    .maybeSingle();
+
+  if (existingAlertError) {
+    console.error('Error comprobando alerta existente:', existingAlertError);
+    return;
+  }
+
+  if (existingAlert) {
+    return;
+  }
 
   const { data: psychologist, error: psychologistError } = await supabase
     .from('users')
@@ -97,15 +142,21 @@ export async function updateMessageAnalysis(
     return;
   }
 
+  const now = new Date().toISOString();
+
   const alertPayload = {
     message_id: messageId,
     student_id: studentId,
     psychologist_id: psychologist.id,
     status: 'pending',
-    created_at: new Date().toISOString(),
+    notes: '',
+    created_at: now,
+    updated_at: now,
   };
 
-  const { error: alertError } = await supabase.from('alerts').insert(alertPayload);
+  const { error: alertError } = await supabase
+    .from('alerts')
+    .insert(alertPayload);
 
   if (alertError) {
     console.error('Error creando alerta:', alertError);

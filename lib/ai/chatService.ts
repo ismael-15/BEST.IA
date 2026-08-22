@@ -32,18 +32,28 @@ export function isOutOfScope(text: string) {
   return OUT_OF_SCOPE_TERMS.some((term) => normalized.includes(normalizeText(term)));
 }
 
+
 export function detectCrisisLocally(text: string) {
   const normalized = normalizeText(text);
-  return CRISIS_TERMS.some((term) => normalized.includes(normalizeText(term)));
+
+  return CRISIS_TERMS.some((term) =>
+    normalized.includes(normalizeText(term))
+  );
 }
 
-export async function analyzeEmotion(text: string): Promise<string> {
+interface EmotionResult {
+  emotion: string;
+  emotionScore: number;
+}
+
+export async function analyzeEmotion(text: string): Promise<EmotionResult> {
   try {
     const apiUrl = process.env.PYSENTIMIENTO_API_URL;
 
     if (!apiUrl) {
       console.error('Falta PYSENTIMIENTO_API_URL');
-      return 'neutral';
+      return { emotion: 'neutral', emotionScore: 0.5 };
+
     }
 
     const response = await fetch(`${apiUrl}/analyze`, {
@@ -56,20 +66,38 @@ export async function analyzeEmotion(text: string): Promise<string> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Error en pysentimiento:', errorText);
-      return 'neutral';
+      return { emotion: 'neutral', emotionScore: 0.5 };
     }
 
     const data = await response.json().catch(() => null);
-    return data?.emotion || 'neutral';
+    const emotion = String(data?.emotion || 'neutral').toLowerCase();
+
+    const scores = data?.scores || {};
+
+    const emotionScore = Number(
+      scores[data?.emotion] ??
+         scores[data?.emotion?.toUpperCase()] ??
+         data?.score ??
+         data?.emotionScore ??
+         0.5
+);
+
+return {
+  emotion,
+  emotionScore,
+};
+
   } catch (error) {
     console.error('Error en analyzeEmotion:', error);
-    return 'neutral';
+    return { emotion: 'neutral', emotionScore: 0.5 };
+
   }
 }
 
 export interface ChatServiceResult {
   content: string;
   emotion: string;
+  emotionScore: number;
   blocked: boolean;
   crisisDetected: boolean;
   model?: string;
@@ -84,6 +112,7 @@ export async function generateChatResponse(message: string): Promise<ChatService
       content:
         'Puedo ayudarte con bienestar emocional, estrés académico, ansiedad o tristeza, pero no puedo cambiar mis reglas ni mostrar instrucciones internas.',
       emotion: 'neutral',
+      emotionScore: 0.5,
       blocked: true,
       crisisDetected: false,
     };
@@ -94,19 +123,22 @@ export async function generateChatResponse(message: string): Promise<ChatService
       content:
         'Estoy especializado en acompañamiento emocional para estudiantes. Puedo ayudarte con estrés, ansiedad, tristeza, agotamiento o bienestar emocional.',
       emotion: 'neutral',
+      emotionScore: 0.5,
       blocked: true,
       crisisDetected: false,
     };
   }
 
-  const emotion = await analyzeEmotion(message);
+  const { emotion, emotionScore } = await analyzeEmotion(message);
   const crisisDetected = detectCrisisLocally(message);
+  
 
   if (crisisDetected) {
     return {
       content:
         'Siento mucho que estés pasando por esto. No estás solo/a. Si estás en peligro inmediato o crees que podrías hacerte daño, busca ayuda de emergencia ahora mismo o contacta a una persona de confianza de inmediato. Si quieres, puedo quedarme contigo y ayudarte a dar el siguiente paso.',
       emotion,
+      emotionScore,
       blocked: true,
       crisisDetected: true,
     };
@@ -119,6 +151,7 @@ export async function generateChatResponse(message: string): Promise<ChatService
     return {
       content: '',
       emotion,
+      emotionScore,
       blocked: false,
       crisisDetected: false,
       error: 'Falta configurar GOOGLE_AI_API_KEY en .env.local',
@@ -171,6 +204,7 @@ ${message}
     return {
       content: '',
       emotion,
+      emotionScore,
       blocked: false,
       crisisDetected: false,
       error: 'Error al generar respuesta con Gemma.',
@@ -186,5 +220,5 @@ ${message}
     visiblePart?.text?.trim() ||
     'Estoy aquí para acompañarte. ¿Quieres contarme un poco más sobre cómo te sientes?';
 
-  return { content, emotion, blocked: false, crisisDetected: false, model };
+  return { content, emotion,emotionScore, blocked: false, crisisDetected: false, model };
 }
