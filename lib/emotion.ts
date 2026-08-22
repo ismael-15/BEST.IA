@@ -30,10 +30,21 @@ export async function analyzeEmotion(content: string) {
 
     const data = await res.json();
 
+    const emotion = String(data?.emotion || 'neutral').toLowerCase();
+    const scores = data?.scores || {};
+
+    const emotionScore = Number(
+      scores[data?.emotion] ??
+        scores[data?.emotion?.toUpperCase()] ??
+        data?.score ??
+        data?.emotionScore ??
+        0.5
+    );
+
     return {
-      emotion: data.emotion || 'neutral',
-      emotionScore: Number(data.score || data.emotionScore || 0.5),
-    };
+  emotion,
+  emotionScore,
+};
   } catch (error) {
     console.error('Error en analyzeEmotion:', error);
 

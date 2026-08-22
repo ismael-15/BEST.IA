@@ -25,7 +25,7 @@ interface AlertItem {
   emotion: string;
   emotionScore: number;
   timestamp: string;
-  status: 'pending' | 'acknowledged' | 'resolved';
+  status: 'pending' | 'reviewed' | 'resolved';
   notes: string;
   messageId: string;
   sessionId: string;
@@ -192,18 +192,25 @@ export default function PsychologistDashboard() {
         const userSessions = sessionsByUser.get(student.id) || [];
         const userMessages = messagesByUser.get(student.id) || [];
         const latestMessage = userMessages[0];
-        const hasActiveSession = userSessions.some((s: any) => s.is_active === true);
+
+        const latestSession = [...userSessions].sort(
+          (a: any, b: any) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        )[0];
+
+        const lastActivity = latestMessage?.created_at || latestSession?.updated_at || '';
 
         return {
           id: student.id,
           name: student.full_name || student.email || 'Sin nombre',
           email: student.email || '',
-          status: hasActiveSession ? 'active' : getStudentStatus(latestMessage?.created_at),
+          status: getStudentStatus(lastActivity),
           lastMessage: latestMessage?.content || 'Sin mensajes todavía',
-          lastActivity: latestMessage?.created_at || '',
+          lastActivity,
           emotionTrend: userMessages.slice(0, 3).map((m: any) => m.emotion || 'neutral'),
         };
       });
+
 
       setStudents(mapped);
     } catch (error) {
@@ -219,10 +226,22 @@ export default function PsychologistDashboard() {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
 
-      const { count: activeStudents } = await supabase
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+      const { data: activeSessionsData, error: activeSessionsError } = await supabase
         .from('chat_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
+        .select('user_id')
+        .eq('is_active', true)
+        .gte('updated_at', fifteenMinutesAgo);
+
+      if (activeSessionsError) {
+        console.error('Error obteniendo estudiante activos:', activeSessionsError)
+
+      } 
+      
+      const activeStudents = new Set(
+        (activeSessionsData || []).map((s: any) => s.user_id)
+      ).size;
 
       const { count: pendingAlerts } = await supabase
         .from('alerts')
@@ -442,10 +461,14 @@ export default function PsychologistDashboard() {
   async function handleAcknowledgeAlert(alertId: string) {
     const { error } = await supabase
       .from('alerts')
-      .update({ status: 'acknowledged', updated_at: new Date().toISOString() })
+      .update({ status: 'reviewed', updated_at: new Date().toISOString() })
       .eq('id', alertId);
 
-    if (error) console.error('Error reconociendo alerta:', error);
+    if (error) {
+      console.error('Error reconociendo alerta:', error);   
+      return;   
+    } 
+
     await loadDashboard();
   }
 
@@ -459,32 +482,76 @@ export default function PsychologistDashboard() {
     await loadDashboard();
   }
 
+  
   async function handleSendIntervention() {
-    if (!intervention.trim() || !selectedAlert) return;
+  if (!intervention.trim() || !selectedAlert) return;
 
-    const mergedNotes = selectedAlert.notes
-      ? `${selectedAlert.notes}\n\n[${new Date().toLocaleString('es-ES')}] ${intervention.trim()}`
-      : `[${new Date().toLocaleString('es-ES')}] ${intervention.trim()}`;
+  const text = intervention.trim();
 
-    const { error } = await supabase
-      .from('alerts')
-      .update({ notes: mergedNotes, updated_at: new Date().toISOString() })
-      .eq('id', selectedAlert.id);
+  const mergedNotes = selectedAlert.notes
+    ? `${selectedAlert.notes}\n\n[${new Date().toLocaleString('es-ES')}] ${text}`
+    : `[${new Date().toLocaleString('es-ES')}] ${text}`;
 
-    if (error) console.error('Error enviando intervención:', error);
-    setIntervention('');
-    await loadDashboard();
+  const { error: alertError } = await supabase
+    .from('alerts')
+    .update({
+      notes: mergedNotes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', selectedAlert.id);
+
+  if (alertError) {
+    console.error('Error guardando intervención en alerta:', alertError);
+    return;
   }
+
+  if (!selectedAlert.sessionId || !selectedAlert.studentId) {
+    console.error('La alerta no tiene sesión o estudiante asociado:', {
+      sessionId: selectedAlert.sessionId,
+      studentId: selectedAlert.studentId,
+    });
+    return;
+  }
+
+  const interventionMessage =
+    `Intervención del psicólogo:\n${text}`;
+
+  const { error: messageError } = await supabase
+    .from('messages')
+    .insert({
+      session_id: selectedAlert.sessionId,
+      user_id: selectedAlert.studentId,
+      content: interventionMessage,
+      role: 'assistant',
+      emotion: 'neutral',
+      emotion_score: 0,
+      crisis_detected: false,
+      created_at: new Date().toISOString(),
+    });
+
+  if (messageError) {
+    console.error('Error publicando intervención en el chat:', messageError);
+    return;
+  }
+
+  setIntervention('');
+  await loadDashboard();
+}
 
   async function handleLogout() {
     await supabase.auth.signOut();
     hardRedirect('/auth/login');
   }
 
-  function normalizeAlertStatus(status: string): 'pending' | 'acknowledged' | 'resolved' {
-    if (status === 'acknowledged' || status === 'resolved') return status;
-    return 'pending';
+function normalizeAlertStatus(
+  status: string
+): 'pending' | 'reviewed' | 'resolved' {
+  if (status === 'reviewed' || status === 'resolved') {
+    return status;
   }
+
+  return 'pending';
+}
 
   function getSeverity(
     crisisDetected?: boolean,
@@ -526,7 +593,7 @@ export default function PsychologistDashboard() {
     switch (status) {
       case 'pending':
         return <AlertTriangle className="text-red-600" size={20} />;
-      case 'acknowledged':
+      case 'reviewed':
         return <Clock className="text-orange-600" size={20} />;
       case 'resolved':
         return <CheckCircle className="text-green-600" size={20} />;

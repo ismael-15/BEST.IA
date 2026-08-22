@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getOrCreateActiveSession } from '@/lib/chatSession';
-import { sendStudentMessage } from '@/lib/sendStudentMessage';
+import { sendStudentMessage,updateMessageAnalysis, } from '@/lib/sendStudentMessage';
 import { saveBotMessage } from '@/lib/saveBotMessage';
 
 interface Message {
@@ -27,6 +27,7 @@ interface Message {
   pending?: boolean;
   blocked?: boolean;
   crisisDetected?: boolean;
+    psychologistIntervention?: boolean;
 }
 
 interface ChatSession {
@@ -120,6 +121,10 @@ export default function ChatPage() {
         content: msg.content,
         timestamp: new Date(msg.created_at),
         emotion: msg.emotion ?? undefined,
+        psychologistIntervention:
+        msg.role === 'assistant' &&
+        String(msg.content || '').startsWith('Intervención del psicólogo:'),
+
       }))
     );
   }
@@ -302,6 +307,9 @@ export default function ChatPage() {
                 content: newMessage.content,
                 timestamp: new Date(newMessage.created_at),
                 emotion: newMessage.emotion ?? undefined,
+                psychologistIntervention:
+                newMessage.role === 'assistant' &&
+                String(newMessage.content || '').startsWith('Intervencion del psicologo')
               },
             ];
           });
@@ -361,6 +369,7 @@ export default function ChatPage() {
       let assistantText =
         'Estoy aquí para acompañarte. ¿Quieres contarme un poco más sobre cómo te sientes?';
       let assistantEmotion: string | undefined;
+      let assistantEmptionScore = 0
       let assistantBlocked = false;
       let assistantCrisisDetected = false;
 
@@ -380,9 +389,39 @@ export default function ChatPage() {
         } else {
           assistantText = data?.content || data?.reply || assistantText;
           assistantEmotion = data?.emotion;
+          assistantEmptionScore = Number(
+            data?.emotionScore ?? data?.emotion_score ?? 0
+          )
           assistantBlocked = !!data?.blocked;
           assistantCrisisDetected = !!data?.crisisDetected;
-        }
+          
+          if (savedStudentMessage?.id) {
+           const emotion = data?.emotion ?? 'neutral';
+           const emotionScore = Number(
+            data?.emotionScore ?? data?.emotion_score ?? 0
+           );
+           const crisisDetected = Boolean(
+            data?.crisisDetected ?? data?.crisis_detected
+           );
+
+           console.log('Actualizando analisis del usuario',{
+            messageId: savedStudentMessage.id,
+            userId,
+            emotion,
+            emotionScore,
+            crisisDetected,
+           });
+
+        await updateMessageAnalysis(
+        savedStudentMessage.id,
+        userId,
+        emotion,
+        emotionScore,
+        crisisDetected
+        
+      );
+    }
+  }
       } catch (chatApiError: any) {
         console.error('Error llamando /api/chat:', chatApiError);
         assistantText = 'No pude contactar al chat en este momento. Intenta de nuevo.';
@@ -405,7 +444,14 @@ export default function ChatPage() {
       ]);
 
       if (activeSessionId) {
-        const savedBot = await saveBotMessage(activeSessionId, assistantText, userId);
+        const savedBot = await saveBotMessage(
+          activeSessionId,
+          assistantText,
+          userId,
+          assistantEmotion ?? 'neutral',
+          assistantEmptionScore,
+          assistantCrisisDetected
+        );
 
         if (savedBot) {
           setMessages((prev) =>
@@ -587,6 +633,8 @@ export default function ChatPage() {
                 className={`max-w-md lg:max-w-lg px-4 py-3 rounded-2xl ${
                   message.role === 'user'
                     ? 'bg-gradient-primary text-white rounded-br-none'
+                    : message.psychologistIntervention
+                    ? 'bg-red-50 text-red-900 border border-red-200 rounded-bl-none card-shadow'
                     : message.crisisDetected
                     ? 'bg-red-50 text-red-900 border border-red-200 rounded-bl-none card-shadow'
                     : message.blocked
@@ -594,6 +642,11 @@ export default function ChatPage() {
                     : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none card-shadow'
                 } ${message.pending ? 'opacity-70' : ''}`}
               >
+                {message.psychologistIntervention &&(
+                  <p className='text-xs font-semibold text-indigo-700 mb 1'>
+                    Intervencion del psicologo
+                  </p>
+                )}
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 {message.emotion && message.role === 'assistant' && (
                   <p className="text-xs mt-2 opacity-70">Emoción detectada: {message.emotion}</p>

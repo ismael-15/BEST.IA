@@ -3,7 +3,10 @@ import { supabase } from '@/lib/supabase';
 export async function saveBotMessage(
   sessionId: string,
   assistantText: string,
-  userId: string
+  userId: string,
+  emotion: string = 'neutral',
+  emotionScore: number = 0,
+  crisisDetected: boolean = false
 ) {
   const { data, error } = await supabase
     .from('messages')
@@ -12,9 +15,9 @@ export async function saveBotMessage(
       user_id: userId,
       content: assistantText,
       role: 'assistant',
-      emotion: 'neutral',
-      emotion_score: 0,
-      crisis_detected: false,
+      emotion,
+      emotion_score: emotionScore,
+      crisis_detected: crisisDetected,
       created_at: new Date().toISOString(),
     })
     .select()
