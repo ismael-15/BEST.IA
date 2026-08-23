@@ -38,16 +38,20 @@ Describan claramente el problema que busca resolver la aplicación.
 
 Identifiquen quiénes usarían o se beneficiarían de la aplicación.
 
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|Usuario / Beneficiario.        | Necesidad principa.                                      |Cómo ayuda la aplicación.                                                 |
-|-------------------------------|----------------------------------------------------------|------------------------------------------------------------------------- |
-|Estudiantes universitarios.    |Expresar cómo se sienten y recibir acompañamiento inicial | Proporciona un chat privado con respuestas empáticas y detección         |
-|                               |                                                          | básica de emociones.                                                     |
-|                               |                                                          |                                                                          |
-|Psicólogos o personal de apoyo.|Identificar casos que requieren seguimiento.              | Permite supervisión del flujo y futura escalación de casos críticos.     |
-|                               |                                                          |                                                                          |
-|Institución educativa          |Mejorar el bienestar y la atención temprana.              | Facilita un canal digital inicial de apoyo emocional para su comunidad.  |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|---------------------------|--------------------------------|-------------------------------------------|
+|usuario o beneficiario     | Necesidad principal            | como ayuda BEST.IA                        |
+|---------------------------|--------------------------------|-------------------------------------------|
+|Estudiantes universitarios | expresar como se sienten y     | Ofrecer un chat privado con respuestas    |
+|                           | recibir acompañamiento inicial.| empáticas, análisis emocional y recuersos | 
+|                           |                                | de ayuda                                  |
+|---------------------------|--------------------------------|-------------------------------------------|
+|Psicólogos o               | Identificar y dar seguimiento  | Proporciona un dashboard para visualizar  |
+|personal de apoyo          | a casos que requieren atención | alertas, cambiar su estado y enviar       | 
+|                           |                                | intervenciones                            |
+|---------------------------|--------------------------------|-------------------------------------------|           
+|Institución educativa      | Fortalecer la atención temprana| Centraliza un canal digital inicial de    |
+|                           | al bienestar estudiantil       | apoyo y facilita el seguimiento de alertas|  
+|---------------------------|--------------------------------|-------------------------------------------|   
 ---
 
 ## 4. Descripción de la Solución
@@ -72,23 +76,23 @@ Expliquen qué hace la aplicación en términos generales.
 ## 5. Componente de Inteligencia Artificial
 
 Indiquen claramente dónde está la IA dentro del proyecto.
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|             Elemento                       |                                  Descripcion                                                                           |
-| -------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| Tipo de IA utilizada.                      | IA generativa conversacional y análisis automático de emoción.                                                         |  
-|                                            |                                                                                                                        |
-| Modelo, algoritmo, servicio o técnica.     | Gemini/Gemma mediante generateContent y servicio externo de análisis emocional.                                        |
-|                                            |                                                                                                                        |
-| Datos de entrada.                          | Texto escrito por el estudiante.                                                                                       |
-|                                            |                                                                                                                        |
-| Resultado generado por la IA.              | Respuesta conversacional empática, emoción detectada y banderas de riesgo o bloqueo.                                   |
-|                                            |                                                                                                                        |
-| Métrica o forma de evaluación, si aplica.  | Pruebas funcionales manuales, coherencia de respuesta y detección segura de crisis.                                    |
-|                                            |                                                                                                                        |
-| Limitaciones actuales.                     | Dependencia de servicios externos, errores del modelo, reglas heurísticas simples para                                 |
-|                                            | crisis y cobertura parcial del cominio.                                                                                |
-|                                            |                                                                                                                        |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+
+|Elemento	            |Descripción
+|-----------------------|-----------------------------------------------------------------------------------------------------|
+|Tipo de IA utilizada	|IA generativa conversacional y análisis automático de emoción                                        |
+|                       |                                                                                                     |
+|Modelo, algoritmo,     |Modelo generativo configurado mediante generateContent y servicio externo de                         |
+|servicio o técnica	    |análisis emocional basado en pysentimiento                                                           |
+|                       |                                                                                                     |
+|Datos de entrada	    |Texto escrito por el estudiante                                                                      |
+|                       |                                                                                                     |
+|Resultado generado     |Respuesta conversacional empática, emoción detectada y banderas de posible riesgo o bloqueo          |
+|por la IA	            |                                                                                                     |
+|                       |                                                                                                     |
+|Evaluación	            |Pruebas funcionales manuales, coherencia de respuesta y validación del flujo de detección de crisis  |
+|Limitaciones	        |Dependencia de servicios externos, posibles errores del modelo, reglas heurísticas de crisis y       |
+|                       |cobertura limitada al alcance académico                                                              |
+|-----------------------|-----------------------------------------------------------------------------------------------------|
 **Explicación breve:**
 
 > La IA participa en dos momentos principales. Primero, un servicio de análisis emocional procesa el texto del usuario para estimar una emoción predominante. Después, un modelo generativo produce una respuesta en lenguaje natural siguiendo restricciones de seguridad, alcance temático y tono empático. Además, el sistema incorpora reglas locales para detectar posibles situaciones de crisis y responder de forma segura antes de correr completamente en el modelo.
@@ -97,17 +101,48 @@ Indiquen claramente dónde está la IA dentro del proyecto.
 
 ## 6. Estado Actual del Proyecto
 
-Ver diagnóstico técnico completo en [`docs/diagnostico-semana-1.md`](./docs/diagnostico-semana-1.md), incluyendo funcionalidades activas, partes incompletas, dependencias y evidencia de que el prototipo funciona. 
+BEST.IA cuenta con una versión funcional desplegada y validada en Railway. Actualmente se encuentran implementadas las siguientes funcionalidades:
 
+Registro e inicio de sesión mediante Supabase Auth.
 
+Confirmación de correo electrónico para las cuentas nuevas.
+
+Separación de roles para estudiantes y psicólogos.
+
+Chat privado para estudiantes.
+
+Creación y persistencia de sesiones de conversación y mensajes en Supabase.
+
+Análisis emocional mediante un servicio Python basado en pysentimiento.
+
+Generación de respuestas conversacionales mediante un modelo de IA generativa.
+
+Detección preliminar de mensajes de riesgo mediante reglas definidas en el proyecto.
+
+Creación de alertas para los casos detectados.
+
+Dashboard para psicólogos con consulta de alertas, severidad, emoción y estado.
+
+Cambio de estado de alertas, incluyendo reconocimiento y resolución.
+
+Envío de intervenciones del psicólogo al chat del estudiante.
+
+Página de recursos de ayuda orientada a El Salvador, con los números 911 y 131.
+
+Protección de datos mediante Supabase Auth y políticas Row Level Security (RLS).
+
+Se realizaron pruebas manuales del flujo completo con cuentas de estudiante y psicólogo. Se validó el registro, confirmación de correo, inicio de sesión, envío de mensajes, análisis emocional, creación de alertas, gestión desde el dashboard, envío de intervenciones y visualización de la intervención por el estudiante.
+
+Las pruebas finalizaron sin errores de consola, errores de Supabase ni respuestas 403 relacionadas con RLS.
+
+ 
 
 ## 7. Arquitectura Actual
 
 Incluyan o enlacen el diagrama de la arquitectura actual.
 
-**Archivo sugerido:** `docs/arquitectura-actual.md` o `docs/arquitectura-actual.png`
-
-Ver detalle completo en [`docs/arquitectura-actual.md`](./docs/arquitectura-actual.md), incluyendo actor principal, interfaz, backend, componente de IA, datos, servicios externos y puntos frágiles.
+Ver detalle completo en [`docs/arquitectura-actual.md`](./docs/arquitectura-actual.md), en este aparato se encuentra
+arquitectura anterior y la final funcional.
 
 **Diagrama:**
 
@@ -119,9 +154,7 @@ Ver detalle completo en [`docs/arquitectura-actual.md`](./docs/arquitectura-actu
 
 Describan cómo debería quedar el proyecto al finalizar el módulo.
 
-**Archivo sugerido:** `docs/arquitectura-objetivo.md` o `docs/arquitectura-objetivo.png`
-
-Ver detalle completo en [`docs/arquitectura-objetivo.md`](./docs/arquitectura-objetivo.md), incluyendo la separación entre interfaz, backend, IA, datos y configuración, y el plan por semana hasta el despliegue final.
+Ver detalle completo en [`docs/arquitectura-objetivo.md`](./docs/arquitectura-objetivo.md), incluyendo la separación entre interfaz, backend, IA, datos y configuración, y el plan por semana hasta el despliegue final, y se abjunta como quedo la arquitectura final.
 
 **Diagrama:**
 
@@ -154,8 +187,8 @@ Describan la organización del proyecto.
 │   └── supabase.ts
 ├── docs/
 │   ├── api.md
-│   ├── evidencias_despliegue.pdf
-│   └── [otros documentos y evidencias]
+│   ├── evidencia-pruebas.pdf
+│   └── otros documentos y evidencias
 ├── emotion_service.py
 ├── Dockerfile
 ├── Dockerfile.emotion
@@ -164,11 +197,32 @@ Describan la organización del proyecto.
 ├── .env.example
 ├── requirements.txt
 ├── package.json
+└── README.mdn
 └── README.md
 
 **Notas sobre la estructura:**
 
-> La carpeta app/api/ expone tres endpoints: /chat (capacidad inteligente principal), /health (estado del servicio) y /metadata (información de versión y tecnología). La carpeta lib/validation/ contiene la validación del contrato de entrada, y lib/ai/ concentra la lógica de negocio (prompt, llamada a Gemini, análisis emocional y detección de crisis), separada del route handler. La documentación completa del contrato de la API está en docs/api.md.
+>app/ contiene las páginas de la aplicación y las rutas API.
+
+app/api/chat/route.ts gestiona el flujo principal de conversación, análisis y respuesta.
+
+app/api/health/route.ts permite verificar el estado de la aplicación.
+
+app/api/metadata/route.ts expone información técnica básica del proyecto.
+
+app/chat/ contiene la interfaz del estudiante.
+
+app/dashboard/ contiene la interfaz de monitoreo para psicólogos.
+
+lib/ai/chatService.ts concentra la lógica relacionada con IA, análisis emocional y detección de crisis.
+
+lib/ contiene los servicios de sesiones, mensajes y conexión con Supabase.
+
+emotion_service.py expone el servicio Python de análisis emocional.
+
+Dockerfile, Dockerfile.emotion y docker-compose.yml permiten ejecutar la solución mediante contenedores.
+
+docs/ almacena documentación, contratos de API y evidencias de pruebas.
 
 ---
 
@@ -335,20 +389,19 @@ Ver plan completo semana por semana en [`docs/plan-mejora.md`](./docs/plan-mejor
 
 Describan con honestidad las limitaciones del prototipo.
 
-- La solución depende de servicios externos para análisis emocional y generación de texto.
+- El análisis emocional y la generación de respuestas dependen de servicios y modelos externos.
 
-- El flujo de crisis aún se basa en reglas simples y no sustituye acompañamiento profesional.
+- La detección de crisis es preliminar y se basa en reglas y señales definidas para el alcance académico del proyecto; no constituye  diagnóstico clínico.
 
-- No existe todavía una capa formal de observabilidad, pruebas automatizadas ni despliegue final. 
+- La plataforma no reemplaza la atención de profesionales de salud mental ni los servicios de emergencia.
 
-- solo funciona de manera local
+- El registro público está enfocado actualmente en estudiantes; la creación de cuentas de psicólogo requiere administración o asignación controlada.
 
-- El dasboarh del psicologo no cuenta con todas las funciones actualmente
+- El dashboard implementa visualización, cambio de estado e intervención, pero puede ampliarse con filtros, historial de seguimiento, asignación manual de casos y métricas.
 
-- Base de datos falta agregar RLS para que funcione bien con las demas funciones que se le agregaran
+- Faltan pruebas automatizadas de integración, rendimiento y carga.
 
-- Login solo se puede registrar estudiantes psicologos solo por admin estamos viendo como solucionar esa parte
----
+- Debe continuar la revisión de políticas RLS al agregar nuevas tablas o funciones.
 
 ## 15. Evidencias
 
@@ -374,6 +427,10 @@ Incluyan librerías, modelos, datasets, documentación o servicios utilizados.
 
 - Gemini API generateContent como base del componente generativo
 
+- Railway para el despliegue del servicio web y el servicio emocional.
+
+- Docker y Docker Compose para la ejecución local mediante contenedores.
+
 ---
 
 ## 17. Checklist de Revisión
@@ -391,3 +448,5 @@ Antes de entregar, verifiquen:
 - [ ] Se identifican riesgos técnicos.
 - [ ] Se presenta plan de mejora por semana.
 - [ ] No se incluyen claves, contraseñas ni tokens privados.
+
+

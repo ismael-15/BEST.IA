@@ -38,3 +38,30 @@ Supabase Auth, Supabase Realtime, servicio de pysentimiento (local), Google Gene
 - El servicio de pysentimiento debe levantarse manualmente en cada entorno.
 - No hay reintentos automáticos si Gemini responde con error 500.
 - La detección de crisis depende de una lista fija de palabras clave, sin cobertura semántica amplia.
+
+## Arquitectura final 
+
+La solución está desplegada mediante una arquitectura de dos servicios en Railway:
+
+Un servicio web con Next.js que contiene el chat, el dashboard y las rutas API.
+
+Un servicio Python llamado emotion-service que ejecuta el análisis emocional con pysentimiento.
+
+Supabase se utiliza como proveedor de autenticación, base de datos PostgreSQL, Realtime y políticas Row Level Security. El servicio web se comunica con el servicio emocional a través de la red privada de Railway, por lo que el analizador no se expone públicamente.
+
+Usuario
+  │
+  ▼
+Railway: BEST.IA (Next.js)
+  ├── Chat del estudiante
+  ├── Dashboard del psicólogo
+  └── API Routes
+          │
+          ├── Supabase
+          │   ├── Auth y confirmación de correo
+          │   ├── PostgreSQL
+          │   ├── Realtime
+          │   └── RLS
+          │
+          └── Railway: emotion-service
+              └── FastAPI + pysentimiento

@@ -39,3 +39,17 @@
 - Configurar Row Level Security (RLS) en todas las tablas de Supabase.
 - Revisión final de que no se expongan credenciales.
 - Documentación consolidada y preparación de la defensa técnica del proyecto.
+
+## Arquitectura objetivo final 
+La arquitectura objetivo mantiene la separación entre interfaz, backend, análisis emocional, datos y configuración. Las mejoras futuras priorizan observabilidad, pruebas automatizadas, métricas de rendimiento y ampliación controlada del dashboard.
+
+Cliente web
+  │
+  ▼
+Next.js en Railway
+  ├── Rutas API protegidas
+  ├── Autenticación y control de roles
+  └── Comunicación privada con el análisis emocional
+          │
+          ├── Supabase: Auth, PostgreSQL, RLS y Realtime
+          └── FastAPI + pysentimiento: análisis de emoción
